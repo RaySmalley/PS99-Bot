@@ -1,0 +1,8 @@
+numpy
+opencv-python
+pillow
+pyautogui
+pygetwindow
+keyboard
+ttkbootstrap
+pypiwin32
