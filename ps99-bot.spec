@@ -6,21 +6,21 @@ a = Analysis(
     pathex=['.'],
     binaries=[],
 	datas = [
-		('media/claim-button.png', '.'), 
-		('media/claim-rewards.png', '.'), 
-		('media/click-for-more.png', '.'), 
-		('media/coin-jar-quest.png', '.'), 
-		('media/coin-jars-quest.png', '.'), 
-		('media/comet-quest.png', '.'), 
-		('media/comets-quest.png', '.'), 
-		('media/daily-gift-button.png', '.'), 
-		('media/lucky-block-quest.png', '.'), 
-		('media/ok-button.png', '.'), 
-		('media/pinata-quest.png', '.'), 
-		('media/pinatas-quest.png', '.'), 
-		('media/potion-quest.png', '.'), 
-		('media/redeem-button.png', '.'), 
-		('media/x-button.png', '.')
+		('media/claim-button.png', 'media'), 
+		('media/claim-rewards.png', 'media'), 
+		('media/click-for-more.png', 'media'), 
+		('media/coin-jar-quest.png', 'media'), 
+		('media/coin-jars-quest.png', 'media'), 
+		('media/comet-quest.png', 'media'), 
+		('media/comets-quest.png', 'media'), 
+		('media/daily-gift-button.png', 'media'), 
+		('media/lucky-block-quest.png', 'media'), 
+		('media/ok-button.png', 'media'), 
+		('media/pinata-quest.png', 'media'), 
+		('media/pinatas-quest.png', 'media'), 
+		('media/potion-quest.png', 'media'), 
+		('media/redeem-button.png', 'media'), 
+		('media/x-button.png', 'media')
 	],
     hiddenimports=[],
     hookspath=[],
@@ -51,5 +51,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-	icon='logo.ico'
+	icon='media/logo.ico'
 )
