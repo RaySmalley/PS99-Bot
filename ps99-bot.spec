@@ -6,6 +6,7 @@ a = Analysis(
     pathex=['.'],
     binaries=[],
 	datas = [
+		('media/logo.ico', 'media'),
 		('media/claim-button.png', 'media'), 
 		('media/claim-rewards.png', 'media'), 
 		('media/click-for-more.png', 'media'), 
