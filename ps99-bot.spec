@@ -9,7 +9,8 @@ a = Analysis(
 		('media/logo.ico', 'media'),
 		('media/claim-button.png', 'media'), 
 		('media/claim-rewards.png', 'media'), 
-		('media/click-for-more.png', 'media'), 
+		('media/click-for-more.png', 'media'),
+		('media/click-to-close.png', 'media'),
 		('media/coin-jar-quest.png', 'media'), 
 		('media/coin-jars-quest.png', 'media'), 
 		('media/comet-quest.png', 'media'), 
@@ -21,6 +22,8 @@ a = Analysis(
 		('media/pinatas-quest.png', 'media'), 
 		('media/potion-quest.png', 'media'), 
 		('media/redeem-button.png', 'media'), 
+		('media/redeem-button-small.png', 'media'), 
+		('media/tap-to-continue.png', 'media'), 
 		('media/x-button.png', 'media')
 	],
     hiddenimports=[],
