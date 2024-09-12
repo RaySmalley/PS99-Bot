@@ -172,11 +172,11 @@ def match_template(screenshot, template):
     return max_val * 100, max_loc
 
 # Funtion to close window (X button)
-def close_window(screenshot):
+def close_window():
     if not running:
         return
     time.sleep(1)
-#    screenshot = capture_screenshot()
+    screenshot = capture_screenshot()
     match_percentage, max_loc = match_template(screenshot, templates['x-button.png'])
     if DEBUG:        print(f"Match for x-button.png is {match_percentage}% confidence at location {max_loc}") # DEBUG
     if match_percentage >= 80.0:
@@ -379,7 +379,7 @@ def run_script():
             click_ok_button(screenshot)
             
             # Close any open windows
-            close_window(screenshot)
+            #close_window(screenshot)
 
             # Use items periodically
             use_item('Flag', 300, gui_queue, flag_hotkey)
