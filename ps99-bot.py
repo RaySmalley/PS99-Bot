@@ -11,19 +11,29 @@ import threading
 import time
 import tkinter as tk
 from tkinter import messagebox, ttk
+import traceback
 import ttkbootstrap as ttkb
-
-# Define stuff
-start_times = {}
 
 # Enable DEBUG mode
 DEBUG = True
+
+# Define stuff
+start_times = {}
+window_title = "Roblox"
 
 # Global flag to control the script execution
 running = False
 
 # Create a queue for GUI updates
 gui_queue = queue.Queue()
+
+# Check-if-running decorator
+def check_running(func):
+    def wrapper(*args, **kwargs):
+        if not running:
+            return (None, None)  # Return a default tuple when the script is stopped
+        return func(*args, **kwargs)
+    return wrapper
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -34,20 +44,32 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, 'media', relative_path)
 
+@check_running
+# Function to check if window is in focus
+def check_focus(window_title):
+    while True:
+        if not running: return
+        window = gw.getWindowsWithTitle(window_title)
+        if window and window[0].isActive:  # Check if the window is active
+            break  # Break out of the loop if the window is in focus
+        else:
+            gui_queue.put(('update_status', "Roblox not detected. Paused..."))
+            time.sleep(1)
+
 # Function to bring the specified window into focus
 def focus_window(window_title):
     window = gw.getWindowsWithTitle(window_title)
     if window:
-        window[0].activate()
+        window[0].activate()  # Activate the window
         return True
     return False
 
 # Function for verbose sleeping
-def sleep(sleep_time):
+@check_running
+def sleep(action, sleep_time):
     for remaining in range(sleep_time, 0, -1):
-        if not running:
-            return
-        gui_queue.put(('update_status', f"Waiting {remaining} seconds..."))
+        if not running: return
+        gui_queue.put(('update_status', f"{action} for {remaining} seconds..."))
         time.sleep(1)
 
 # Function to get the screen size
@@ -71,15 +93,15 @@ def get_screen_size(window=None):
 screen_width, screen_height = get_screen_size()
 if screen_width is None or screen_height is None:
     print("Error: Unable to get screen size")
+    sys.exit()  # Exit the script
 else:
     # Define center of screen
     center_x = screen_width // 2
     center_y = screen_height // 2
 
     # Function to move the cursor smoothly to a specific position
+    @check_running
     def move_cursor(x=None, y=None, window=None, duration=0.02):
-        if not running:
-            return
 
         screen_width, screen_height = get_screen_size(window)
         if screen_width is None or screen_height is None:
@@ -113,8 +135,7 @@ else:
 
         steps = int(duration * 100)
         for i in range(steps):
-            if not running:
-                return
+            if not running: return
             progress = i / steps
             new_x = int(start_x + (x - start_x) * progress)
             new_y = int(start_y + (y - start_y) * progress)
@@ -122,92 +143,92 @@ else:
             time.sleep(duration / steps)
 
         pydirectinput.moveTo(x, y)  # Ensure the cursor ends at the exact position
-        if DEBUG:
-            print(f"Moving cursor to: ({x}, {y})")  # DEBUG
+        if DEBUG: print(f"Moving cursor to: ({x}, {y})")  
 
 # Function to perform a click using pydirectinput
+@check_running
 def click(x, y):
-    if not running:
-        return
     move_cursor(x, y)  # Move the cursor smoothly to the position
     pydirectinput.click()  # Perform a left click
-    if DEBUG:
-        print(f"Clicking: ({x}, {y})")  # DEBUG
+    if DEBUG: print(f"Clicking: ({x}, {y})")  
 
 # Load templates once
 templates = {
-    'claim-button.png':  cv2.imread(resource_path('claim-button.png'), cv2.IMREAD_COLOR),
-    'claim-rewards.png': cv2.imread(resource_path('claim-rewards.png'), cv2.IMREAD_COLOR),
-    'click-for-more.png': cv2.imread(resource_path('click-for-more.png'), cv2.IMREAD_COLOR),
-    'click-to-close.png': cv2.imread(resource_path('click-to-close.png'), cv2.IMREAD_COLOR),
-    'coin-jar-quest.png': cv2.imread(resource_path('coin-jar-quest.png'), cv2.IMREAD_COLOR),
-    'coin-jars-quest.png': cv2.imread(resource_path('coin-jars-quest.png'), cv2.IMREAD_COLOR),
-    'comet-quest.png': cv2.imread(resource_path('comet-quest.png'), cv2.IMREAD_COLOR),
-    'comets-quest.png': cv2.imread(resource_path('comets-quest.png'), cv2.IMREAD_COLOR),
-    'daily-gift-button.png': cv2.imread(resource_path('daily-gift-button.png'), cv2.IMREAD_COLOR),
-    'ok-button.png': cv2.imread(resource_path('ok-button.png'), cv2.IMREAD_COLOR),
-    'pinata-quest.png': cv2.imread(resource_path('pinata-quest.png'), cv2.IMREAD_COLOR),
-    'pinatas-quest.png': cv2.imread(resource_path('pinatas-quest.png'), cv2.IMREAD_COLOR),
-    'lucky-block-quest.png': cv2.imread(resource_path('lucky-block-quest.png'), cv2.IMREAD_COLOR),
-    'potion-quest.png': cv2.imread(resource_path('potion-quest.png'), cv2.IMREAD_COLOR),
-    'redeem-button.png': cv2.imread(resource_path('redeem-button.png'), cv2.IMREAD_COLOR),
-    'redeem-button-small.png': cv2.imread(resource_path('redeem-button-small.png'), cv2.IMREAD_COLOR),
-    'tap-to-continue.png': cv2.imread(resource_path('tap-to-continue.png'), cv2.IMREAD_COLOR),
-    'x-button.png': cv2.imread(resource_path('x-button.png'), cv2.IMREAD_COLOR)
+    'best-eggs-quest': cv2.imread(resource_path('best-eggs-quest.png'), cv2.IMREAD_COLOR),
+    'buy': cv2.imread(resource_path('buy.png'), cv2.IMREAD_COLOR),
+    'claim-button': cv2.imread(resource_path('claim-button.png'), cv2.IMREAD_COLOR),
+    'claim-rewards': cv2.imread(resource_path('claim-rewards.png'), cv2.IMREAD_COLOR),
+    'click-for-more': cv2.imread(resource_path('click-for-more.png'), cv2.IMREAD_COLOR),
+    'click-to-close': cv2.imread(resource_path('click-to-close.png'), cv2.IMREAD_COLOR),
+    'coin-jar-quest': cv2.imread(resource_path('coin-jar-quest.png'), cv2.IMREAD_COLOR),
+    'coin-jars-quest': cv2.imread(resource_path('coin-jars-quest.png'), cv2.IMREAD_COLOR),
+    'comet-quest': cv2.imread(resource_path('comet-quest.png'), cv2.IMREAD_COLOR),
+    'comets-quest': cv2.imread(resource_path('comets-quest.png'), cv2.IMREAD_COLOR),
+    'daily-gift-button': cv2.imread(resource_path('daily-gift-button.png'), cv2.IMREAD_COLOR),
+    'e-button': cv2.imread(resource_path('e-button.png'), cv2.IMREAD_COLOR),
+    'lucky-block-quest': cv2.imread(resource_path('lucky-block-quest.png'), cv2.IMREAD_COLOR),
+    'ok-button': cv2.imread(resource_path('ok-button.png'), cv2.IMREAD_COLOR),
+    'pinata-quest': cv2.imread(resource_path('pinata-quest.png'), cv2.IMREAD_COLOR),
+    'pinatas-quest': cv2.imread(resource_path('pinatas-quest.png'), cv2.IMREAD_COLOR),
+    'potion-quest': cv2.imread(resource_path('potion-quest.png'), cv2.IMREAD_COLOR),
+    'rare-eggs-quest': cv2.imread(resource_path('rare-eggs-quest.png'), cv2.IMREAD_COLOR),
+    'redeem-button-1': cv2.imread(resource_path('redeem-button-1.png'), cv2.IMREAD_COLOR),
+    'redeem-button-2': cv2.imread(resource_path('redeem-button-2.png'), cv2.IMREAD_COLOR),
+    'redeem-button-3': cv2.imread(resource_path('redeem-button-3.png'), cv2.IMREAD_COLOR),
+    'redeem-button-4': cv2.imread(resource_path('redeem-button-4.png'), cv2.IMREAD_COLOR),
+    'tap-to-continue': cv2.imread(resource_path('tap-to-continue.png'), cv2.IMREAD_COLOR),
+    'x-button': cv2.imread(resource_path('x-button.png'), cv2.IMREAD_COLOR)
 }
 
 # Function to capture a screenshot and convert it to BGR format
+@check_running
 def capture_screenshot():
-    if not running:
-        return
+    check_focus(window_title)
     screenshot = pyautogui.screenshot()
     return cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
 
 # Function to perform template matching and return match percentage and location
+@check_running
 def match_template(screenshot, template):
-    if not running:
-        return
     result = cv2.matchTemplate(screenshot, template, cv2.TM_CCOEFF_NORMED)
     _, max_val, _, max_loc = cv2.minMaxLoc(result)
     return max_val * 100, max_loc
 
 # Funtion to close window (X button)
+@check_running
 def close_window():
-    if not running:
-        return
     time.sleep(1)
     screenshot = capture_screenshot()
-    match_percentage, max_loc = match_template(screenshot, templates['x-button.png'])
-    if DEBUG:        print(f"Match for x-button.png is {match_percentage}% confidence at location {max_loc}") # DEBUG
-    if match_percentage >= 80.0:
+    match_percentage, max_loc = match_template(screenshot, templates['x-button'])
+    if DEBUG: print(f"Match for x-button is {match_percentage}% confidence at location {max_loc}") 
+    if match_percentage is not None and match_percentage >= 80.0:
         gui_queue.put(('update_status', "Closing window..."))
-        h, w = templates['x-button.png'].shape[:2]
+        h, w = templates['x-button'].shape[:2]
         pattern_center_x = max_loc[0] + w // 2
         pattern_center_y = max_loc[1] + h // 2
         click(pattern_center_x, pattern_center_y)
 
 # Function to check/claim rank rewards
+@check_running
 def claim_rank_rewards(screenshot):
-    if not running:
-        return
     fail_count = 0
-#    screenshot = capture_screenshot()
-    match_percentage, max_loc = match_template(screenshot, templates['claim-rewards.png'])
-    if DEBUG:        print(f"Match for claim-rewards.png is {match_percentage}% confidence at location {max_loc}") # DEBUG
-    if match_percentage >= 80.0:
+    match_percentage, max_loc = match_template(screenshot, templates['claim-rewards'])
+    if DEBUG: print(f"Match for claim-rewards is {match_percentage}% confidence at location {max_loc}")  
+    if match_percentage is not None and match_percentage >= 80.0:
         gui_queue.put(('update_status', "Claiming Rewards..."))
-        h, w = templates['claim-rewards.png'].shape[:2]
+        h, w = templates['claim-rewards'].shape[:2]
         pattern_center_x = max_loc[0] + w // 2
         pattern_center_y = max_loc[1] + h // 2 + 100
         click(pattern_center_x, pattern_center_y)
-        sleep(2) # Allow time for window to open
+        time.sleep(2)  # Allow time for window to open
 
         while fail_count < 20 and running:
+            if not running: return
             screenshot = capture_screenshot()
-            match_percentage, max_loc = match_template(screenshot, templates['claim-button.png'])
-            if DEBUG:                print(f"Match for claim-button.png is {match_percentage}% confidence at location {max_loc}") # DEBUG
-            if match_percentage >= 60.0:
-                h, w = templates['claim-button.png'].shape[:2]
+            match_percentage, max_loc = match_template(screenshot, templates['claim-button'])
+            if DEBUG: print(f"Match for claim-button is {match_percentage}% confidence at location {max_loc}")  
+            if match_percentage is not None and match_percentage >= 60.0:
+                h, w = templates['claim-button'].shape[:2]
                 pattern_center_x = max_loc[0] + w // 2
                 pattern_center_y = max_loc[1] + h // 2
                 click(pattern_center_x, pattern_center_y)
@@ -218,87 +239,119 @@ def claim_rank_rewards(screenshot):
                     move_cursor()  # Center the cursor on the screen
                     pyautogui.scroll(-500)
 
-        if not running:
-            return
-
         # Click to advance after ranking up
-        sleep(3)
+        time.sleep(3)
         gui_queue.put(('update_status', "Closing rewards window..."))
-        patterns = ['click-for-more.png', 'tap-to-continue.png', 'click-to-close.png']
+        patterns = ['click-for-more', 'tap-to-continue', 'click-to-close']
         for _ in range(3):  # Check each pattern 3 times
-            if not running:
-                return
+            if not running: return
+            check_focus(window_title)
             for pattern in patterns:
+                if not running: return
                 screenshot = capture_screenshot()
                 match_percentage, max_loc = match_template(screenshot, templates[pattern])
-                if DEBUG:
-                    print(f"Match for {pattern} is {match_percentage}% confidence at location {max_loc}") # DEBUG
-                if match_percentage >= 80.0:
+                if DEBUG: print(f"Match for {pattern} is {match_percentage}% confidence at location {max_loc}")  
+                if match_percentage is not None and match_percentage >= 80.0:
                     h, w = templates[pattern].shape[:2]
                     pattern_center_x = max_loc[0] + w // 2
                     pattern_center_y = max_loc[1] + h // 2
                     click(pattern_center_x, pattern_center_y)
-                    sleep(2)
+                    time.sleep(2)
 
-        close_window() # Closes the claim rewards window
+        sleep("Waiting", 5)
+        close_window()  # Closes the claim rewards window
 
 # Function to claim daily rewards
+@check_running
 def redeem_daily_rewards(screenshot):
-    if not running:
-        return
-
-#    screenshot = capture_screenshot()
-    match_percentage, max_loc = match_template(screenshot, templates['daily-gift-button.png'])
-    if DEBUG:        print(f"Match for daily-gift-button.png is {match_percentage}% confidence at location {max_loc}")  # DEBUG
-    if match_percentage >= 60.0:  # Look for rewards that are ready
+    match_percentage, max_loc = match_template(screenshot, templates['daily-gift-button'])
+    if DEBUG: print(f"Match for daily-gift-button is {match_percentage}% confidence at location {max_loc}")  
+    if match_percentage is not None and match_percentage >= 60.0:  # Look for rewards that are ready
         gui_queue.put(('update_status', "Redeeming daily rewards..."))
-        h, w = templates['daily-gift-button.png'].shape[:2]
+        h, w = templates['daily-gift-button'].shape[:2]
         pattern_center_x = max_loc[0] + w // 2
         pattern_center_y = max_loc[1] + h // 2
-        click(pattern_center_x, pattern_center_y) # Click on Present
-        sleep(2)
+        click(pattern_center_x, pattern_center_y)  # Click on Present
+        time.sleep(2)
 
         while running:
             screenshot = capture_screenshot()
-            patterns = ['redeem-button.png', 'redeem-button-small.png']
+            patterns = ['redeem-button-1', 'redeem-button-2', 'redeem-button-3', 'redeem-button-4']
             match = False
 
             for pattern in patterns:
+                if not running: return
                 template = templates[pattern]
                 match_percentage, max_loc = match_template(screenshot, template)
-                if DEBUG:                    print(f"Match for {pattern} is {match_percentage}% confidence at location {max_loc}")  # DEBUG
-                if match_percentage >= 60.0:
+                if DEBUG: print(f"Match for {pattern} is {match_percentage}% confidence at location {max_loc}")  
+                if match_percentage is not None and match_percentage >= 81.0:
                     h, w = template.shape[:2]
                     pattern_center_x = max_loc[0] + w // 2
                     pattern_center_y = max_loc[1] + h // 2
                     click(pattern_center_x, pattern_center_y)
                     time.sleep(0.5)
                     match = True
-                    break # Exit for loop if match found
-                    
+                    break  # Exit for loop if match found
+
             if not match:
                 break  # Exit the while loop if no patterns found
 
+        sleep("Waiting", 2)
         close_window()
+        
+# Function to check for open menus
+@check_running
+def check_for_menus():
+    while True:
+        screenshot = capture_screenshot()
+        
+        # Templates for x-button and ok-button
+        x_button_template = templates['x-button']
+        ok_button_template = templates['ok-button']
+
+        # Check for x-button
+        match_percentage, _ = match_template(screenshot, x_button_template)
+        if DEBUG: print(f"Match for x-button is {match_percentage}% confidence")  
+
+        # If x-button is found
+        if match_percentage is not None and match_percentage >= 80.0:
+            # Check for ok-button
+            match_percentage, _ = match_template(screenshot, ok_button_template)
+            if DEBUG: print(f"Match for ok-button is {match_percentage}% confidence")  
+
+            # Return True only if ok-button is NOT found
+            if match_percentage is not None and match_percentage < 80.0:
+                if DEBUG: print("Menu detected. Waiting...")
+                gui_queue.put(('update_status', "Menu detected. Waiting..."))
+                time.sleep(3)
+            else:
+                if DEBUG: print("ok-button found. Exiting loop...")                
+                break
+        else:
+            if DEBUG: print("x-button not found. Exiting loop...")                
+            break
 
 # Function to update the status label text with "info" style
 def update_status(text):
     status_label.config(text=text, bootstyle="info")
 
 # Function to click OK button
-def click_ok_button(screenshot):
-    time.sleep(1) # Delay to allow window to open
-#    screenshot = capture_screenshot()
-    match_percentage, max_loc = match_template(screenshot, templates['ok-button.png'])
-    if DEBUG:        print(f"Match for ok-button.png is {match_percentage}% confidence at location {max_loc}") # DEBUG
-    if match_percentage >= 80.0:
+@check_running
+def click_ok_button():
+    time.sleep(1)  # Delay to allow window to open
+    screenshot = capture_screenshot()
+    match_percentage, max_loc = match_template(screenshot, templates['ok-button'])
+    if DEBUG: print(f"Match for ok-button is {match_percentage}% confidence at location {max_loc}")  
+    if match_percentage is not None and match_percentage >= 80.0:
         gui_queue.put(('update_status', "Clicking OK button..."))
-        h, w = templates['ok-button.png'].shape[:2]
+        h, w = templates['ok-button'].shape[:2]
         pattern_center_x = max_loc[0] + w // 2
         pattern_center_y = max_loc[1] + h // 2
+        if DEBUG: print(f"Clicking at coordinates: ({pattern_center_x}, {pattern_center_y})")  
         click(pattern_center_x, pattern_center_y)
 
 # Function to use items at defined intervals
+@check_running
 def use_item(item, time_interval, gui_queue, hotkey):
     current_time = time.time()
     start_time = start_times.get(item, current_time)
@@ -306,21 +359,80 @@ def use_item(item, time_interval, gui_queue, hotkey):
     
     if hotkey and elapsed_time >= time_interval:
         gui_queue.put(('update_status', f"Using {item}..."))
-        keyboard.press_and_release(hotkey.lower())
+        if hotkey is not None:
+            print(f"Using hotkey: {hotkey} for item: {item}")
+            keyboard.press_and_release(hotkey.lower())
         start_times[item] = current_time
 
+@check_running
+# Function to move character
+def move_character(direction, times, duration):
+    for _ in range(times):
+        if direction == 'left':
+            pyautogui.keyDown('a')
+            time.sleep(duration)
+            pyautogui.keyUp('a')
+        elif direction == 'right':
+            pyautogui.keyDown('d')
+            time.sleep(duration)
+            pyautogui.keyUp('d')
+        time.sleep(1.5)  # Adjust this sleep time as needed
+
+@check_running
+def hatch_eggs(hatch_duration):
+    check_for_menus()
+    
+    move_duration = 0.3
+    
+    gui_queue.put(('update_status', "Attempting to hatch some eggs..."))
+    
+    e_button_template = templates['e-button']
+    buy_template = templates['buy']
+
+    # Nudge character to the left up to 10 times
+    for i in range(10):
+        if not running: return
+        move_character('left', 1, move_duration)
+        screenshot = capture_screenshot()
+        match_percentage, max_loc = match_template(screenshot, e_button_template)
+        if match_percentage is not None and match_percentage >= 80.0:
+            if DEBUG: print("Found e-button. Clicking...")
+            pyautogui.press('e')
+            break
+    else:
+        if DEBUG: print("e-button not found after 10 moves.")
+        return
+
+    # Check for buy pattern
+    screenshot = capture_screenshot()
+    match_percentage, max_loc = match_template(screenshot, buy_template)
+    if match_percentage is not None and match_percentage >= 80.0:
+        if DEBUG: print("Found buy pattern. Clicking...")
+        h, w = buy_template.shape[:2]
+        pattern_center_x = max_loc[0] + w // 2
+        pattern_center_y = max_loc[1] + h // 2
+        click(pattern_center_x, pattern_center_y)
+
+    # Wait while hatching eggs
+    sleep("Hatching eggs", hatch_duration)
+
+    # Return character
+    total_duration = int(i * move_duration) + (1 if (i * move_duration) % 1 > 0 else 0)  # Round up to the nearest full second
+    if DEBUG: print(f"Moving right continuously for {total_duration} seconds...")
+    gui_queue.put(('update_status', "Returning..."))
+    move_character('right', 1, total_duration)  # Move continuously with total duration
+
 # Function to run the main script
+@check_running
 def run_script():
     global running
 
     # Timers for items using
-    start_times['Magnet Flag'] = time.time()
+    start_times['Flag'] = time.time()
     start_times['Fruit'] = time.time()
 
     try:
-        # Focus on Roblox window
-        window_title = "Roblox"
-       
+        # Focus on Roblox window      
         if not focus_window(window_title):
             gui_queue.put(('update_status', "Launch PS99 first!"))
             running = False
@@ -333,39 +445,42 @@ def run_script():
 
         # Define the patterns and their respective actions and status texts
         patterns = {
-            'coin-jar-quest.png': (coin_jar_hotkey.get().lower() if coin_jar_hotkey.get() else None, "Calling Coin Jar..."),
-            'coin-jars-quest.png': (coin_jar_hotkey.get().lower() if coin_jar_hotkey.get() else None, "Calling Coin Jar..."),
-            'comet-quest.png': (comet_hotkey.get().lower() if comet_hotkey.get() else None, "Calling Comet..."),
-            'comets-quest.png': (comet_hotkey.get().lower() if comet_hotkey.get() else None, "Calling Comet..."),
-            'lucky-block-quest.png': (lucky_block_hotkey.get().lower() if lucky_block_hotkey.get() else None, "Calling Lucky Block..."),
-            'pinata-quest.png': (pinata_hotkey.get().lower() if pinata_hotkey.get() else None, "Calling Pinata..."),
-            'pinatas-quest.png': (pinata_hotkey.get().lower() if pinata_hotkey.get() else None, "Calling Pinata..."),
-            'potion-quest.png': (potion_hotkey.get().lower() if potion_hotkey.get() else None, "Using Potion..."),
+            'coin-jar-quest': (coin_jar_hotkey.get().lower() if coin_jar_hotkey.get() else None, "Calling Coin Jar"),
+            'coin-jars-quest': (coin_jar_hotkey.get().lower() if coin_jar_hotkey.get() else None, "Calling Coin Jar"),
+            'comet-quest': (comet_hotkey.get().lower() if comet_hotkey.get() else None, "Calling Comet"),
+            'comets-quest': (comet_hotkey.get().lower() if comet_hotkey.get() else None, "Calling Comet"),
+            'lucky-block-quest': (lucky_block_hotkey.get().lower() if lucky_block_hotkey.get() else None, "Calling Lucky Block"),
+            'pinata-quest': (pinata_hotkey.get().lower() if pinata_hotkey.get() else None, "Calling Pinata"),
+            'pinatas-quest': (pinata_hotkey.get().lower() if pinata_hotkey.get() else None, "Calling Pinata"),
+            'potion-quest': (potion_hotkey.get().lower() if potion_hotkey.get() else None, "Using Potion"),
+            'best-eggs-quest': (None, None),
+            'rare-eggs-quest': (None, None)
         }
 
         # Initialize variable to keep track of the last matched pattern
         last_matched_pattern = None
-
+        
         # Main loop
         while running:
             # Check if Roblox window is still open
-            if not focus_window(window_title):
-                gui_queue.put(('update_status', "Roblox not detected. Stopped..."))
-                running = False
-                gui_queue.put(('update_button',))
-                return
-            
+            if check_focus(window_title):
+                gui_queue.put(('update_status', "Running..."))
+
             # Set wait time between iterations
             seconds = 3
-            
+
+            # Pause for menus
+            check_for_menus()
+
             # No match loop count
-            if DEBUG:
-                print(f"No match count: {no_match_count}")  # DEBUG
+            if DEBUG: print(f"No match count: {no_match_count}")  
 
             # Click perform so failsafe clicks if no match in 10 loops
             if no_match_count >= 10:
                 gui_queue.put(('update_status', "Executing failsafe clicks..."))
                 for _ in range(4):  # Click 4 times
+                    if not running: return
+                    check_focus(window_title)
                     click(center_x, center_y)
                 no_match_count = 0
            
@@ -376,14 +491,11 @@ def run_script():
             screenshot = capture_screenshot()
 
             # Check for OK button and click it
-            click_ok_button(screenshot)
+            click_ok_button()
             
-            # Close any open windows
-            #close_window(screenshot)
-
             # Use items periodically
-            use_item('Flag', 300, gui_queue, flag_hotkey)
-            use_item('Fruit', 360, gui_queue, fruit_hotkey) 
+            use_item('Flag', 300, gui_queue, flag_hotkey.get())
+            use_item('Fruit', 360, gui_queue, fruit_hotkey.get()) 
 
             # Check and redeem rank rewards
             claim_rank_rewards(screenshot)
@@ -391,7 +503,8 @@ def run_script():
             # Check and redeem daily rewards
             redeem_daily_rewards(screenshot)
 
-            # Execute ultimate if checkbox is checked                      
+            # Execute ultimate if checkbox is checked
+            if not running: return
             if ultimate_var.get():
                 gui_queue.put(('update_status', "Executing Ultimate..."))
                 keyboard.press_and_release('r')
@@ -402,49 +515,54 @@ def run_script():
             else:
                 patterns_list = list(patterns.items())  # Convert to list to allow modifications
 
+            if not running: return
             found_match = False
 
-            # Search for patterns
+            # Search for patterns and store results
             gui_queue.put(('update_status', "Searching for quests..."))
+            matches = []
             for pattern, (action, status_text) in patterns_list:
-                if not running:
-                    return
-                    
-                if found_match:
-                    break
-
-                match_percentage, max_loc = match_template(screenshot, templates[pattern])
-                if DEBUG:
-                    print(f"Match for {pattern} is {match_percentage}% confidence at location {max_loc}")  # DEBUG
+                if not running: return
+                check_focus(window_title)
                 
-                if match_percentage >= threshold:
-                    found_match = True
+                match_percentage, max_loc = match_template(screenshot, templates[pattern])
+                if DEBUG: print(f"Match for {pattern} is {match_percentage}% confidence at location {max_loc}")  
+                
+                if match_percentage is not None and match_percentage >= threshold:
+                    matches.append((pattern, action, status_text, max_loc))
 
-                    if action:
-                        seconds = 10
-                        if pattern == 'potion-quest.png':
-                            seconds = 0
-                        gui_queue.put(('update_status', status_text))
-                        keyboard.press_and_release(action)  # Call the action
-                        sleep(seconds)  # Allow time for action execution
-                    
-                    # Update the last matched pattern
-                    last_matched_pattern = (pattern, (action, status_text))
-                    no_match_count = 0
-                    break  # Exit the for loop to recheck with updated list
+            # Find the most valuable quest
+            if matches:
+                best_match = max(matches, key=lambda x: x[3][1])  # x[3][1] is the y-coordinate of max_loc
+                pattern, action, status_text, max_loc = best_match
+                found_match = True
+
+                if pattern in ['best-eggs-quest', 'rare-eggs-quest']:
+                    gui_queue.put(('update_status', status_text))
+                    hatch_eggs(60)
+                elif action:
+                    check_for_menus()
+                    seconds = 10
+                    if pattern == 'potion-quest':
+                        seconds = 0
+                    gui_queue.put(('update_status', status_text+"..."))
+                    keyboard.press_and_release(action)  # Call the action
+                    click_ok_button()  # Check for "There is already something in this area" window 
+                    sleep(status_text, seconds)  # Allow time for action execution
+                
+                # Update the last matched pattern
+                last_matched_pattern = (pattern, (action, status_text))
+                no_match_count = 0
 
             if not found_match:
                 no_match_count += 1
 
-            if not running:
-                return           
-            
         gui_queue.put(('update_button',))
 
-
     except Exception as e:
+        error_message = f"Error: {e}\n{traceback.format_exc()}"
         gui_queue.put(('status_label', "ERROR", "danger"))
-        gui_queue.put(('show_error', str(e)))
+        gui_queue.put(('show_error', error_message))
         running = False
         gui_queue.put(('update_button',))
 
@@ -461,6 +579,7 @@ def start_script():
 def stop_script():
     global running
     running = False
+    if DEBUG: print("Stopped")
     gui_queue.put(('update_status', "Stopped"))
     gui_queue.put(('update_button',))
 
