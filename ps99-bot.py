@@ -155,7 +155,7 @@ def click(x, y):
 # Load templates once
 templates = {
     'best-eggs-quest': cv2.imread(resource_path('best-eggs-quest.png'), cv2.IMREAD_COLOR),
-    'buy': cv2.imread(resource_path('buy.png'), cv2.IMREAD_COLOR),
+    'buy-button': cv2.imread(resource_path('buy-button.png'), cv2.IMREAD_COLOR),
     'claim-button': cv2.imread(resource_path('claim-button.png'), cv2.IMREAD_COLOR),
     'claim-rewards': cv2.imread(resource_path('claim-rewards.png'), cv2.IMREAD_COLOR),
     'click-for-more': cv2.imread(resource_path('click-for-more.png'), cv2.IMREAD_COLOR),
@@ -387,7 +387,7 @@ def hatch_eggs(hatch_duration):
     gui_queue.put(('update_status', "Attempting to hatch some eggs..."))
     
     e_button_template = templates['e-button']
-    buy_template = templates['buy']
+    buy_button_template = templates['buy-button']
 
     # Nudge character to the left up to 10 times
     for i in range(10):
@@ -403,12 +403,12 @@ def hatch_eggs(hatch_duration):
         if DEBUG: print("e-button not found after 10 moves.")
         return
 
-    # Check for buy pattern
+    # Check for buy-button pattern
     screenshot = capture_screenshot()
-    match_percentage, max_loc = match_template(screenshot, buy_template)
+    match_percentage, max_loc = match_template(screenshot, buy_button_template)
     if match_percentage is not None and match_percentage >= 80.0:
-        if DEBUG: print("Found buy pattern. Clicking...")
-        h, w = buy_template.shape[:2]
+        if DEBUG: print("Found buy-button pattern. Clicking...")
+        h, w = buy_button_template.shape[:2]
         pattern_center_x = max_loc[0] + w // 2
         pattern_center_y = max_loc[1] + h // 2
         click(pattern_center_x, pattern_center_y)

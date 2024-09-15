@@ -7,7 +7,7 @@ a = Analysis(
     binaries=[],
 	datas = [
 		('media/best-eggs-quest.png', 'media'),
-		('media/buy.png', 'media'),
+		('media/buy-button.png', 'media'),
 		('media/claim-button.png', 'media'), 
 		('media/claim-rewards.png', 'media'), 
 		('media/click-for-more.png', 'media'),
