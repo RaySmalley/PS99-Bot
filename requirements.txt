@@ -1,7 +1,7 @@
 numpy
 opencv-python
-pillow
 pyautogui
 pygetwindow
 keyboard
 ttkbootstrap
+pydirectinput
